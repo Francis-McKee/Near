@@ -86,3 +86,100 @@
         font-size: 0.8rem;
     }
 }
+
+/* Text-post composer and finite chronological feed. */
+#post-form textarea {
+    box-sizing: border-box;
+    display: block;
+    width: 100%;
+    min-width: 0;
+    padding: 0.85rem 0.9rem;
+    color: #343a36;
+    background: #fff;
+    border: 1px solid #c9cbc4;
+    border-radius: 0.65rem;
+    font: inherit;
+    line-height: 1.55;
+    resize: vertical;
+}
+
+#post-form textarea:focus {
+    outline: 2px solid #42634f;
+    outline-offset: 2px;
+}
+
+.feed-posts {
+    display: grid;
+    gap: 1rem;
+    margin-top: 1rem;
+}
+
+.feed-post {
+    min-width: 0;
+    padding: 1.1rem;
+    background: #f5f3ef;
+    border: 1px solid #dedfd9;
+    border-radius: 0.8rem;
+}
+
+.feed-post-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 1rem;
+}
+
+.feed-post-author {
+    margin: 0;
+    color: #343a36;
+    font-size: 1rem;
+    font-weight: 600;
+    overflow-wrap: anywhere;
+}
+
+.feed-post-date {
+    flex: 0 0 auto;
+    color: #656d67;
+    font-size: 0.8rem;
+    line-height: 1.5;
+    text-align: right;
+}
+
+.feed-post-text {
+    margin: 0.85rem 0 0;
+    color: #343a36;
+    line-height: 1.65;
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+}
+
+.caught-up-message {
+    margin: 1.25rem 0 0;
+    padding: 1rem;
+    color: #42634f;
+    background: #edf1eb;
+    border: 1px solid #d5dfd3;
+    border-radius: 0.7rem;
+    text-align: center;
+    font-size: 0.9rem;
+}
+
+#post-form-message:empty,
+#feed-status:empty {
+    display: none;
+}
+
+@media (max-width: 480px) {
+    .feed-post {
+        padding: 0.9rem;
+    }
+
+    .feed-post-header {
+        flex-direction: column;
+        gap: 0.25rem;
+    }
+
+    .feed-post-date {
+        text-align: left;
+    }
+}

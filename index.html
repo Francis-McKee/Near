@@ -13,7 +13,7 @@
 <body>
     <main class="page-container">
         <header class="site-header">
-            <a class="brand" href="./" aria-label="Near home">Near</a>
+            <a class="brand" href="index.html" aria-label="Near home">Near</a>
             <p class="brand-subtitle">Stay connected, intentionally.</p>
         </header>
 
@@ -23,12 +23,10 @@
                 <h1 id="auth-heading">Stay close to your people.</h1>
                 <p class="intro-text">Share life with friends without the endless scroll.</p>
             </div>
-
             <div class="auth-tabs" role="group" aria-label="Authentication options">
                 <button id="login-tab" class="tab-button active" type="button" aria-pressed="true">Log in</button>
                 <button id="signup-tab" class="tab-button" type="button" aria-pressed="false">Create account</button>
             </div>
-
             <form id="auth-form">
                 <div id="display-name-group" class="form-group hidden">
                     <label for="display-name">Display name</label>
@@ -57,6 +55,7 @@
                 <a class="app-nav-link" href="friends.html" data-nav="friends"><span class="nav-symbol" aria-hidden="true">☺</span><span>Friends</span></a>
                 <a class="app-nav-link" href="profile.html" data-nav="profile"><span class="nav-symbol" aria-hidden="true">⚙</span><span>Profile</span></a>
             </nav>
+
             <div class="dashboard-header">
                 <div>
                     <p class="eyebrow">Your space</p>
@@ -64,9 +63,26 @@
                 </div>
             </div>
             <p id="feed-welcome" class="intro-text"></p>
-            <section class="feed-placeholder" aria-labelledby="feed-placeholder-heading">
-                <h2 id="feed-placeholder-heading">A little room for real life.</h2>
-                <p>Posts will live here. Once you share updates, you'll see your posts and your accepted friends' posts in chronological order.</p>
+
+            <section class="friend-section" aria-labelledby="create-post-heading">
+                <h2 id="create-post-heading">Share an update</h2>
+                <p class="intro-text">Write something for your accepted friends. Only you and your current friends can see your posts.</p>
+                <form id="post-form">
+                    <div class="form-group">
+                        <label for="post-text">What's on your mind?</label>
+                        <textarea id="post-text" name="text" rows="4" maxlength="2000" placeholder="Share a thought or a moment..." required></textarea>
+                        <p id="post-character-count" class="field-hint">0 / 2,000 characters</p>
+                    </div>
+                    <button id="submit-post-button" class="button button-primary" type="submit">Post update</button>
+                    <p id="post-form-message" class="message" role="status" aria-live="polite"></p>
+                </form>
+            </section>
+
+            <section class="friend-section" aria-labelledby="feed-posts-heading">
+                <h2 id="feed-posts-heading">Recent updates</h2>
+                <p id="feed-status" class="intro-text" role="status" aria-live="polite">Loading your feed...</p>
+                <div id="feed-posts" class="feed-posts"></div>
+                <p id="caught-up-message" class="caught-up-message hidden">You're all caught up.</p>
             </section>
             <p id="app-message" class="message" role="status" aria-live="polite"></p>
         </section>

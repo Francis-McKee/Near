@@ -6,7 +6,16 @@ import {
     sendPasswordResetEmail,
     updateProfile
 } from "https://www.gstatic.com/firebasejs/11.2.0/firebase-auth.js";
-import { doc, getDoc, setDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/11.2.0/firebase-firestore.js";
+import {
+    addDoc,
+    collection,
+    doc,
+    getDoc,
+    getDocs,
+    query,
+    serverTimestamp,
+    where
+} from "https://www.gstatic.com/firebasejs/11.2.0/firebase-firestore.js";
 
 const authSection = document.querySelector("#auth-section");
 const appSection = document.querySelector("#app-section");
@@ -21,10 +30,21 @@ const submitButton = document.querySelector("#submit-button");
 const forgotPasswordButton = document.querySelector("#forgot-password");
 const authMessage = document.querySelector("#auth-message");
 const feedWelcome = document.querySelector("#feed-welcome");
+const postForm = document.querySelector("#post-form");
+const postTextInput = document.querySelector("#post-text");
+const postCharacterCount = document.querySelector("#post-character-count");
+const submitPostButton = document.querySelector("#submit-post-button");
+const postFormMessage = document.querySelector("#post-form-message");
+const feedPosts = document.querySelector("#feed-posts");
+const feedStatus = document.querySelector("#feed-status");
+const caughtUpMessage = document.querySelector("#caught-up-message");
 
 let currentMode = "login";
 let authResolved = false;
 let isSubmitting = false;
+let currentUser = null;
+let currentProfile = null;
+let isPosting = false;
 
 function setMessage(element, message, type = "") {
     if (!element) return;
@@ -74,6 +94,15 @@ function getFirebaseErrorMessage(error) {
     return messages[error.code] || error.message || "Something went wrong. Please try again.";
 }
 
+function getSafeNextPage() {
+    const params = new URLSearchParams(window.location.search);
+    const next = params.get("next");
+    if (!next) return null;
+    if (next === "friends.html" || next.startsWith("friends.html?invite=")) return next;
+    if (next === "profile.html") return next;
+    return null;
+}
+
 async function createUserProfile(user, displayName) {
     const userRef = doc(db, "users", user.uid);
     const existingProfile = await getDoc(userRef);
@@ -107,16 +136,6 @@ async function handleSignup() {
 
 async function handleLogin() {
     await signInWithEmailAndPassword(auth, emailInput.value.trim(), passwordInput.value);
-}
-
-function getSafeNextPage() {
-    const params = new URLSearchParams(window.location.search);
-    const next = params.get("next");
-    if (!next) return null;
-    // Only allow navigation to the two local pages; preserve an invitation code.
-    if (next === "friends.html" || next.startsWith("friends.html?invite=")) return next;
-    if (next === "profile.html") return next;
-    return null;
 }
 
 if (authForm) {
@@ -167,11 +186,148 @@ if (authForm) {
     });
 }
 
+function getTimestampMillis(value) {
+    return value && typeof value.toMillis === "function" ? value.toMillis() : 0;
+}
+
+function formatPostDate(timestamp) {
+    if (!timestamp || typeof timestamp.toDate !== "function") return "Just now";
+    return new Intl.DateTimeFormat(undefined, {
+        dateStyle: "medium",
+        timeStyle: "short"
+    }).format(timestamp.toDate());
+}
+
+function createPostElement(postId, post) {
+    const article = document.createElement("article");
+    article.className = "feed-post";
+
+    const header = document.createElement("div");
+    header.className = "feed-post-header";
+
+    const author = document.createElement("h3");
+    author.className = "feed-post-author";
+    author.textContent = post.authorName || "Near member";
+
+    const date = document.createElement("time");
+    date.className = "feed-post-date";
+    date.textContent = formatPostDate(post.createdAt);
+    if (post.createdAt && typeof post.createdAt.toDate === "function") {
+        date.dateTime = post.createdAt.toDate().toISOString();
+    }
+    header.append(author, date);
+    article.append(header);
+
+    const body = document.createElement("p");
+    body.className = "feed-post-text";
+    body.textContent = post.text || "";
+    article.append(body);
+
+    return article;
+}
+
+async function loadFeed() {
+    if (!currentUser || !feedPosts || !feedStatus) return;
+    feedPosts.replaceChildren();
+    caughtUpMessage.classList.add("hidden");
+    feedStatus.textContent = "Loading your feed...";
+    feedStatus.classList.remove("error", "success");
+
+    try {
+        const friendshipQuery = query(
+            collection(db, "friendships"),
+            where("userIds", "array-contains", currentUser.uid)
+        );
+        const friendshipSnapshot = await getDocs(friendshipQuery);
+        const friendIds = friendshipSnapshot.docs
+            .map((friendship) => friendship.data().userIds.find((uid) => uid !== currentUser.uid))
+            .filter(Boolean);
+        const authorIds = [...new Set([currentUser.uid, ...friendIds])];
+
+        const snapshots = await Promise.all(authorIds.map((authorId) =>
+            getDocs(query(collection(db, "posts"), where("authorId", "==", authorId)))
+        ));
+
+        const posts = [];
+        snapshots.forEach((snapshot) => {
+            snapshot.forEach((postSnapshot) => {
+                posts.push({ id: postSnapshot.id, ...postSnapshot.data() });
+            });
+        });
+        posts.sort((a, b) => getTimestampMillis(b.createdAt) - getTimestampMillis(a.createdAt));
+
+        if (posts.length === 0) {
+            feedStatus.textContent = "No updates yet. When you or your friends share something, it will appear here.";
+            caughtUpMessage.classList.add("hidden");
+            return;
+        }
+
+        feedStatus.textContent = "";
+        for (const post of posts) {
+            feedPosts.append(createPostElement(post.id, post));
+        }
+        caughtUpMessage.classList.remove("hidden");
+    } catch (error) {
+        console.error("Feed loading error:", error);
+        feedStatus.textContent = "We couldn't load your feed. Check your connection and Firestore security rules, then reload.";
+        feedStatus.classList.add("error");
+    }
+}
+
+if (postTextInput && postCharacterCount) {
+    postTextInput.addEventListener("input", () => {
+        postCharacterCount.textContent = `${postTextInput.value.length.toLocaleString()} / 2,000 characters`;
+    });
+}
+
+if (postForm) {
+    postForm.addEventListener("submit", async (event) => {
+        event.preventDefault();
+        if (!currentUser || !currentProfile || isPosting) return;
+        const text = postTextInput.value.trim();
+        if (!text) {
+            setMessage(postFormMessage, "Write something before posting.", "error");
+            postTextInput.focus();
+            return;
+        }
+        if (text.length > 2000) {
+            setMessage(postFormMessage, "Posts must be 2,000 characters or fewer.", "error");
+            return;
+        }
+
+        isPosting = true;
+        submitPostButton.disabled = true;
+        submitPostButton.textContent = "Posting...";
+        setMessage(postFormMessage, "");
+        try {
+            await addDoc(collection(db, "posts"), {
+                authorId: currentUser.uid,
+                authorName: currentProfile.displayName,
+                text,
+                createdAt: serverTimestamp()
+            });
+            postForm.reset();
+            postCharacterCount.textContent = "0 / 2,000 characters";
+            setMessage(postFormMessage, "Your post has been shared with your accepted friends.", "success");
+            await loadFeed();
+        } catch (error) {
+            console.error("Post creation error:", error);
+            setMessage(postFormMessage, getFirebaseErrorMessage(error), "error");
+        } finally {
+            isPosting = false;
+            submitPostButton.disabled = false;
+            submitPostButton.textContent = "Post update";
+        }
+    });
+}
+
 onAuthStateChanged(auth, async (user) => {
     authResolved = true;
     if (!authSection || !appSection) return;
 
     if (!user) {
+        currentUser = null;
+        currentProfile = null;
         authSection.classList.remove("hidden");
         appSection.classList.add("hidden");
         setFormDisabled(false);
@@ -184,18 +340,30 @@ onAuthStateChanged(auth, async (user) => {
         return;
     }
 
+    currentUser = user;
     authSection.classList.add("hidden");
     appSection.classList.remove("hidden");
     setFormDisabled(true);
+    if (postForm) submitPostButton.disabled = true;
+
     try {
-        const profileSnapshot = await getDoc(doc(db, "users", user.uid));
-        const displayName = profileSnapshot.exists()
-            ? profileSnapshot.data().displayName
-            : (user.displayName || "there");
-        if (feedWelcome) feedWelcome.textContent = `Welcome, ${displayName}. Your feed is a space for updates from you and your accepted friends.`;
+        let profileSnapshot = await getDoc(doc(db, "users", user.uid));
+        if (!profileSnapshot.exists()) {
+            const displayName = user.displayName?.trim();
+            if (!displayName || !user.email) throw new Error("The account is missing profile information.");
+            await createUserProfile(user, displayName);
+            profileSnapshot = await getDoc(doc(db, "users", user.uid));
+        }
+        currentProfile = profileSnapshot.data();
+        if (feedWelcome) {
+            feedWelcome.textContent = `Welcome, ${currentProfile.displayName}. Your feed includes updates from you and your accepted friends.`;
+        }
+        if (postForm) submitPostButton.disabled = false;
+        await loadFeed();
     } catch (error) {
-        console.error("Profile loading error:", error);
-        if (feedWelcome) feedWelcome.textContent = "Your feed is ready when you are.";
+        console.error("Account loading error:", error);
+        if (feedWelcome) feedWelcome.textContent = "We couldn't load your account. Please reload the page.";
+        setMessage(feedStatus, getFirebaseErrorMessage(error), "error");
     }
 });
 
