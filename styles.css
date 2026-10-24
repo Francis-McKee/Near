@@ -358,6 +358,97 @@ a:focus-visible {
     display: none !important;
 }
 
+/* Friends and invitations */
+
+.friend-section {
+    margin-top: 2rem;
+    padding-top: 1.5rem;
+    border-top: 1px solid #dedfd9;
+}
+
+.friend-section h2 {
+    margin: 0 0 0.5rem;
+    color: #343a36;
+    font-size: 1.15rem;
+    font-weight: 600;
+    line-height: 1.4;
+}
+
+.friend-section .intro-text {
+    margin: 0 0 1rem;
+    color: #656d67;
+    font-size: 0.95rem;
+    line-height: 1.6;
+}
+
+.friends-list {
+    display: grid;
+    gap: 0.5rem;
+    margin: 1rem 0 0;
+    padding: 0;
+    list-style: none;
+}
+
+.friend-item {
+    display: flex;
+    align-items: center;
+    min-height: 3.25rem;
+    padding: 0.75rem 1rem;
+    color: #343a36;
+    background: #f5f3ef;
+    border: 1px solid #dedfd9;
+    border-radius: 0.65rem;
+    font-size: 0.95rem;
+    overflow-wrap: anywhere;
+}
+
+#invitation-link-area {
+    display: grid;
+    gap: 0.65rem;
+    margin-top: 1.25rem;
+}
+
+#invitation-link-area label {
+    color: #343a36;
+    font-size: 0.9rem;
+    font-weight: 500;
+}
+
+#invitation-link {
+    box-sizing: border-box;
+    width: 100%;
+    min-width: 0;
+    padding: 0.75rem 0.85rem;
+    color: #555;
+    background: #f5f3ef;
+    border: 1px solid #dedfd9;
+    border-radius: 0.6rem;
+    font: inherit;
+    font-size: 0.875rem;
+}
+
+#invitation-link-hint {
+    margin: 0;
+    color: #656d67;
+    font-size: 0.85rem;
+    line-height: 1.5;
+}
+
+#copy-invitation-button {
+    justify-self: start;
+}
+
+.invitation-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+    margin-top: 1rem;
+}
+
+.friend-section .button {
+    max-width: 100%;
+}
+
 @media (max-width: 480px) {
     .page-container {
         width: calc(100% - 24px);
@@ -387,6 +478,23 @@ a:focus-visible {
 
     .empty-state {
         padding: 24px 15px;
+    }
+
+    .friend-section {
+        margin-top: 1.5rem;
+        padding-top: 1.25rem;
+    }
+
+    .invitation-actions {
+        flex-direction: column;
+    }
+
+    .invitation-actions .button {
+        width: 100%;
+    }
+
+    #copy-invitation-button {
+        width: 100%;
     }
 }
 

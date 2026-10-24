@@ -1,8 +1,8 @@
-
 rules_version = '2';
 
 service cloud.firestore {
   match /databases/{database}/documents {
+
     function isSignedIn() {
       return request.auth != null;
     }
@@ -11,11 +11,36 @@ service cloud.firestore {
       return isSignedIn() && request.auth.uid == userId;
     }
 
+    function friendshipIdFor(uidA, uidB) {
+      return uidA < uidB
+        ? uidA + "_" + uidB
+        : uidB + "_" + uidA;
+    }
+
+    function areFriends(userA, userB) {
+      return userA != userB
+        && exists(
+          /databases/$(database)/documents/friendships/$(friendshipIdFor(userA, userB))
+        )
+        && get(
+          /databases/$(database)/documents/friendships/$(friendshipIdFor(userA, userB))
+        ).data.userIds.hasAll([userA, userB]);
+    }
+
     match /users/{userId} {
-      allow read: if ownsUserDocument(userId);
+      allow get: if ownsUserDocument(userId)
+        || (isSignedIn() && areFriends(request.auth.uid, userId));
+
+      allow list: if false;
 
       allow create: if ownsUserDocument(userId)
         && request.resource.data.keys().hasOnly([
+          'uid',
+          'displayName',
+          'email',
+          'createdAt'
+        ])
+        && request.resource.data.keys().hasAll([
           'uid',
           'displayName',
           'email',
@@ -28,6 +53,165 @@ service cloud.firestore {
         && request.resource.data.email == request.auth.token.email
         && request.resource.data.createdAt == request.time;
 
+      allow update, delete: if false;
+    }
+
+    match /friendInvitations/{invitationId} {
+
+      // A sender, a pending-link holder, or the person who claimed
+      // the invitation may retrieve an invitation by its exact ID.
+      // Collection listing is never allowed.
+      allow get: if isSignedIn()
+        && (
+          resource == null
+          || resource.data.senderId == request.auth.uid
+          || (
+            resource.data.status == 'pending'
+            && resource.data.senderId != request.auth.uid
+          )
+          || (
+            resource.data.keys().hasAny(['usedBy'])
+            && resource.data.usedBy == request.auth.uid
+          )
+        );
+
+      allow list: if false;
+
+      allow create: if isSignedIn()
+        && request.resource.data.keys().hasAll([
+          'senderId',
+          'senderName',
+          'status',
+          'createdAt'
+        ])
+        && request.resource.data.keys().hasOnly([
+          'senderId',
+          'senderName',
+          'status',
+          'createdAt'
+        ])
+        && request.resource.data.senderId == request.auth.uid
+        && request.resource.data.senderName is string
+        && request.resource.data.senderName
+          == get(
+            /databases/$(database)/documents/users/$(request.auth.uid)
+          ).data.displayName
+        && request.resource.data.status == 'pending'
+        && request.resource.data.createdAt == request.time;
+
+      // The only permitted update is to claim a pending invitation.
+      // Acceptance and friendship creation must occur atomically.
+      allow update: if isSignedIn()
+        && resource.data.status == 'pending'
+        && resource.data.senderId != request.auth.uid
+        && request.resource.data.keys().hasAll([
+          'senderId',
+          'senderName',
+          'status',
+          'createdAt',
+          'usedBy',
+          'usedAt'
+        ])
+        && request.resource.data.keys().hasOnly([
+          'senderId',
+          'senderName',
+          'status',
+          'createdAt',
+          'usedBy',
+          'usedAt'
+        ])
+        && request.resource.data.diff(resource.data)
+          .affectedKeys().hasOnly(['status', 'usedBy', 'usedAt'])
+        && request.resource.data.senderId == resource.data.senderId
+        && request.resource.data.senderName == resource.data.senderName
+        && request.resource.data.createdAt == resource.data.createdAt
+        && request.resource.data.status in ['accepted', 'declined']
+        && request.resource.data.usedBy == request.auth.uid
+        && request.resource.data.usedAt == request.time
+        && (
+          (
+            request.resource.data.status == 'declined'
+          )
+          ||
+          (
+            request.resource.data.status == 'accepted'
+            && existsAfter(
+              /databases/$(database)/documents/friendships/$(friendshipIdFor(resource.data.senderId, request.auth.uid))
+            )
+            && getAfter(
+              /databases/$(database)/documents/friendships/$(friendshipIdFor(resource.data.senderId, request.auth.uid))
+            ).data.invitationId == invitationId
+            && getAfter(
+              /databases/$(database)/documents/friendships/$(friendshipIdFor(resource.data.senderId, request.auth.uid))
+            ).data.userIds.hasAll([
+              resource.data.senderId,
+              request.auth.uid
+            ])
+          )
+        );
+
+      allow delete: if false;
+    }
+
+    match /friendships/{friendshipId} {
+
+      // A participant can read their own friendship records.
+      // Allow reading a missing document so the app can check whether
+      // a friendship already exists before creating it.
+      allow get: if isSignedIn()
+        && (
+          resource == null
+          || resource.data.userIds.hasAny([request.auth.uid])
+        );
+
+      // The app's array-contains query must be scoped to the signed-in user.
+      allow list: if isSignedIn()
+        && resource.data.userIds.hasAny([request.auth.uid]);
+
+      // A friendship can only be created with an accepted invitation
+      // in the same atomic transaction.
+      allow create: if isSignedIn()
+        && request.resource.data.keys().hasAll([
+          'userIds',
+          'invitationId',
+          'createdAt'
+        ])
+        && request.resource.data.keys().hasOnly([
+          'userIds',
+          'invitationId',
+          'createdAt'
+        ])
+        && request.resource.data.userIds is list
+        && request.resource.data.userIds.size() == 2
+        && request.resource.data.userIds[0] < request.resource.data.userIds[1]
+        && request.resource.data.userIds.hasAny([request.auth.uid])
+        && friendshipId
+          == friendshipIdFor(
+            request.resource.data.userIds[0],
+            request.resource.data.userIds[1]
+          )
+        && request.resource.data.invitationId is string
+        && request.resource.data.createdAt == request.time
+        && existsAfter(
+          /databases/$(database)/documents/friendInvitations/$(request.resource.data.invitationId)
+        )
+        && getAfter(
+          /databases/$(database)/documents/friendInvitations/$(request.resource.data.invitationId)
+        ).data.status == 'accepted'
+        && getAfter(
+          /databases/$(database)/documents/friendInvitations/$(request.resource.data.invitationId)
+        ).data.senderId in request.resource.data.userIds
+        && getAfter(
+          /databases/$(database)/documents/friendInvitations/$(request.resource.data.invitationId)
+        ).data.usedBy in request.resource.data.userIds
+        && getAfter(
+          /databases/$(database)/documents/friendInvitations/$(request.resource.data.invitationId)
+        ).data.senderId
+          != getAfter(
+            /databases/$(database)/documents/friendInvitations/$(request.resource.data.invitationId)
+          ).data.usedBy;
+
+      // Friendships cannot be edited or deleted directly by clients.
       allow update, delete: if false;
     }
 

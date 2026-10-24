@@ -11,9 +11,14 @@ import {
 } from "https://www.gstatic.com/firebasejs/11.2.0/firebase-auth.js";
 
 import {
+    collection,
     doc,
     getDoc,
+    getDocs,
+    query,
+    where,
     setDoc,
+    runTransaction,
     serverTimestamp
 } from "https://www.gstatic.com/firebasejs/11.2.0/firebase-firestore.js";
 
@@ -37,9 +42,24 @@ const appMessage = document.querySelector("#app-message");
 const welcomeHeading = document.querySelector("#welcome-heading");
 const profileEmail = document.querySelector("#profile-email");
 
+const friendsList = document.querySelector("#friends-list");
+const friendsEmpty = document.querySelector("#friends-empty");
+const createInvitationButton = document.querySelector("#create-invitation-button");
+const invitationLinkArea = document.querySelector("#invitation-link-area");
+const invitationLinkInput = document.querySelector("#invitation-link");
+const copyInvitationButton = document.querySelector("#copy-invitation-button");
+
+const incomingInvitation = document.querySelector("#incoming-invitation");
+const incomingInvitationText = document.querySelector("#incoming-invitation-text");
+const acceptInvitationButton = document.querySelector("#accept-invitation-button");
+const declineInvitationButton = document.querySelector("#decline-invitation-button");
+
 let currentMode = "login";
 let authResolved = false;
 let isSubmitting = false;
+let currentUser = null;
+let currentProfile = null;
+let invitationActionInProgress = false;
 
 function setMessage(element, message, type = "") {
     element.textContent = message;
@@ -67,7 +87,6 @@ function setFormDisabled(disabled) {
 
 function updateFormMode(mode) {
     currentMode = mode;
-
     const isSignup = mode === "signup";
 
     loginTab.classList.toggle("active", !isSignup);
@@ -88,38 +107,62 @@ function updateFormMode(mode) {
 }
 
 function getFirebaseErrorMessage(error) {
-    switch (error.code) {
-        case "auth/email-already-in-use":
-            return "An account already exists with this email address. Try logging in instead.";
-
-        case "auth/invalid-email":
-            return "Enter a valid email address.";
-
-        case "auth/weak-password":
-            return "Choose a stronger password with at least 6 characters.";
-
-        case "auth/invalid-credential":
-        case "auth/invalid-login-credentials":
-        case "auth/wrong-password":
-        case "auth/user-not-found":
-            return "The email or password is incorrect.";
-
-        case "auth/too-many-requests":
-            return "Too many attempts. Please wait a while before trying again.";
-
-        case "auth/network-request-failed":
-            return "A network error occurred. Check your internet connection and try again.";
-
-        case "auth/operation-not-allowed":
-            return "Email/password sign-in is not enabled in your Firebase project.";
-
-        case "permission-denied":
-        case "firestore/permission-denied":
-            return "Your request was blocked by the database security rules. Check that the published rules match the app.";
-
-        default:
-            return "Something went wrong. Please try again.";
+    if (error.code === "auth/email-already-in-use") {
+        return "An account already exists with this email address. Try logging in instead.";
     }
+
+    if (error.code === "auth/invalid-email") {
+        return "Enter a valid email address.";
+    }
+
+    if (error.code === "auth/weak-password") {
+        return "Choose a stronger password with at least 6 characters.";
+    }
+
+    if (
+        error.code === "auth/invalid-credential" ||
+        error.code === "auth/invalid-login-credentials" ||
+        error.code === "auth/wrong-password" ||
+        error.code === "auth/user-not-found"
+    ) {
+        return "The email or password is incorrect.";
+    }
+
+    if (error.code === "auth/too-many-requests") {
+        return "Too many attempts. Please wait a while before trying again.";
+    }
+
+    if (error.code === "auth/network-request-failed") {
+        return "A network error occurred. Check your internet connection and try again.";
+    }
+
+    if (error.code === "auth/operation-not-allowed") {
+        return "Email/password sign-in is not enabled in your Firebase project.";
+    }
+
+    if (
+        error.code === "permission-denied" ||
+        error.code === "firestore/permission-denied"
+    ) {
+        return "The database blocked this request. Check that the latest Firestore rules are published.";
+    }
+
+    return error.message || "Something went wrong. Please try again.";
+}
+
+function getInvitationIdFromUrl() {
+    return new URL(window.location.href).searchParams.get("invite");
+}
+
+function clearInvitationFromUrl() {
+    const url = new URL(window.location.href);
+    url.searchParams.delete("invite");
+    window.history.replaceState({}, "", url);
+}
+
+function getFriendshipId(uidA, uidB) {
+    const [firstUid, secondUid] = [uidA, uidB].sort();
+    return `${firstUid}_${secondUid}`;
 }
 
 async function createUserProfile(user, displayName) {
@@ -155,24 +198,18 @@ async function handleSignup() {
         return;
     }
 
-    const credential = await createUserWithEmailAndPassword(
-        auth,
-        email,
-        password
-    );
+    const credential = await createUserWithEmailAndPassword(auth, email, password);
 
-    await updateProfile(credential.user, {
-        displayName
-    });
-
+    await updateProfile(credential.user, { displayName });
     await createUserProfile(credential.user, displayName);
 }
 
 async function handleLogin() {
-    const email = emailInput.value.trim();
-    const password = passwordInput.value;
-
-    await signInWithEmailAndPassword(auth, email, password);
+    await signInWithEmailAndPassword(
+        auth,
+        emailInput.value.trim(),
+        passwordInput.value
+    );
 }
 
 authForm.addEventListener("submit", async (event) => {
@@ -212,19 +249,15 @@ authForm.addEventListener("submit", async (event) => {
 });
 
 loginTab.addEventListener("click", () => {
-    if (isSubmitting) {
-        return;
+    if (!isSubmitting) {
+        updateFormMode("login");
     }
-
-    updateFormMode("login");
 });
 
 signupTab.addEventListener("click", () => {
-    if (isSubmitting) {
-        return;
+    if (!isSubmitting) {
+        updateFormMode("signup");
     }
-
-    updateFormMode("signup");
 });
 
 forgotPasswordButton.addEventListener("click", async () => {
@@ -261,7 +294,6 @@ forgotPasswordButton.addEventListener("click", async () => {
 
 logoutButton.addEventListener("click", async () => {
     logoutButton.disabled = true;
-    setMessage(appMessage, "");
 
     try {
         await signOut(auth);
@@ -273,8 +305,286 @@ logoutButton.addEventListener("click", async () => {
     }
 });
 
+// Create a one-time invitation link.
+createInvitationButton.addEventListener("click", async () => {
+    if (!currentUser || !currentProfile) {
+        return;
+    }
+
+    createInvitationButton.disabled = true;
+    setMessage(appMessage, "Creating your invitation...");
+
+    try {
+        const invitationRef = doc(collection(db, "friendInvitations"));
+
+        await setDoc(invitationRef, {
+            senderId: currentUser.uid,
+            senderName: currentProfile.displayName,
+            status: "pending",
+            createdAt: serverTimestamp()
+        });
+
+        const url = new URL(window.location.href);
+        url.search = "";
+        url.searchParams.set("invite", invitationRef.id);
+
+        invitationLinkInput.value = url.toString();
+        invitationLinkArea.classList.remove("hidden");
+
+        setMessage(
+            appMessage,
+            "Your invitation link is ready to share.",
+            "success"
+        );
+    } catch (error) {
+        console.error("Invitation creation error:", error);
+        setMessage(appMessage, getFirebaseErrorMessage(error), "error");
+    } finally {
+        createInvitationButton.disabled = false;
+    }
+});
+
+copyInvitationButton.addEventListener("click", async () => {
+    if (!invitationLinkInput.value) {
+        return;
+    }
+
+    try {
+        await navigator.clipboard.writeText(invitationLinkInput.value);
+        setMessage(appMessage, "Invitation link copied.", "success");
+    } catch (error) {
+        invitationLinkInput.focus();
+        invitationLinkInput.select();
+
+        setMessage(
+            appMessage,
+            "Automatic copying failed. Select and copy the link above.",
+            "error"
+        );
+    }
+});
+
+async function loadFriends() {
+    if (!currentUser) {
+        return;
+    }
+
+    friendsList.replaceChildren();
+    friendsEmpty.textContent = "Loading friends...";
+
+    try {
+        const friendshipsQuery = query(
+            collection(db, "friendships"),
+            where("userIds", "array-contains", currentUser.uid)
+        );
+
+        const snapshot = await getDocs(friendshipsQuery);
+
+        const friendIds = snapshot.docs
+            .map((friendshipDoc) => friendshipDoc.data().userIds)
+            .map((userIds) => userIds.find((uid) => uid !== currentUser.uid))
+            .filter(Boolean);
+
+        if (friendIds.length === 0) {
+            friendsEmpty.textContent = "Your accepted connections will appear here.";
+            return;
+        }
+
+        const profiles = await Promise.all(
+            friendIds.map(async (uid) => {
+                const profileSnapshot = await getDoc(doc(db, "users", uid));
+
+                if (!profileSnapshot.exists()) {
+                    return { uid, displayName: "Friend" };
+                }
+
+                return { uid, ...profileSnapshot.data() };
+            })
+        );
+
+        profiles.sort((a, b) =>
+            (a.displayName || "").localeCompare(b.displayName || "")
+        );
+
+        for (const profile of profiles) {
+            const item = document.createElement("li");
+            item.className = "friend-item";
+            item.textContent = profile.displayName || "Friend";
+            friendsList.append(item);
+        }
+
+        friendsEmpty.textContent = "";
+    } catch (error) {
+        console.error("Friend list loading error:", error);
+        friendsEmpty.textContent = "We couldn't load your friends. Please reload the page.";
+    }
+}
+
+async function loadIncomingInvitation() {
+    const invitationId = getInvitationIdFromUrl();
+
+    if (!invitationId || !currentUser) {
+        incomingInvitation.classList.add("hidden");
+        return;
+    }
+
+    incomingInvitation.classList.remove("hidden");
+    acceptInvitationButton.disabled = true;
+    declineInvitationButton.disabled = true;
+    setMessage(appMessage, "Loading invitation...");
+
+    try {
+        const invitationRef = doc(db, "friendInvitations", invitationId);
+        const invitationSnapshot = await getDoc(invitationRef);
+
+        if (!invitationSnapshot.exists()) {
+            throw new Error("This invitation doesn't exist or is no longer available.");
+        }
+
+        const invitation = invitationSnapshot.data();
+
+        incomingInvitationText.textContent =
+            `${invitation.senderName} invited you to connect on Near.`;
+
+        if (invitation.senderId === currentUser.uid) {
+            incomingInvitationText.textContent =
+                "This is your own invitation link. Send it to a friend instead.";
+            acceptInvitationButton.classList.add("hidden");
+            declineInvitationButton.classList.add("hidden");
+        } else if (invitation.status !== "pending") {
+            incomingInvitationText.textContent =
+                invitation.usedBy === currentUser.uid
+                    ? `You have already ${invitation.status} this invitation.`
+                    : "This invitation has already been used.";
+
+            acceptInvitationButton.classList.add("hidden");
+            declineInvitationButton.classList.add("hidden");
+        } else {
+            acceptInvitationButton.classList.remove("hidden");
+            declineInvitationButton.classList.remove("hidden");
+            acceptInvitationButton.disabled = false;
+            declineInvitationButton.disabled = false;
+        }
+
+        setMessage(appMessage, "");
+    } catch (error) {
+        console.error("Invitation loading error:", error);
+        incomingInvitationText.textContent =
+            "We couldn't load this invitation. It may be invalid or already used.";
+        acceptInvitationButton.classList.add("hidden");
+        declineInvitationButton.classList.add("hidden");
+        setMessage(appMessage, getFirebaseErrorMessage(error), "error");
+    }
+}
+
+async function respondToInvitation(response) {
+    if (!currentUser || invitationActionInProgress) {
+        return;
+    }
+
+    const invitationId = getInvitationIdFromUrl();
+
+    if (!invitationId) {
+        setMessage(appMessage, "This invitation link is missing its code.", "error");
+        return;
+    }
+
+    invitationActionInProgress = true;
+    acceptInvitationButton.disabled = true;
+    declineInvitationButton.disabled = true;
+    setMessage(appMessage, "Processing invitation...");
+
+    try {
+        const invitationRef = doc(db, "friendInvitations", invitationId);
+
+        await runTransaction(db, async (transaction) => {
+            const invitationSnapshot = await transaction.get(invitationRef);
+
+            if (!invitationSnapshot.exists()) {
+                throw new Error("This invitation doesn't exist.");
+            }
+
+            const invitation = invitationSnapshot.data();
+
+            if (invitation.status !== "pending") {
+                throw new Error("This invitation has already been used.");
+            }
+
+            if (invitation.senderId === currentUser.uid) {
+                throw new Error("You cannot accept your own invitation.");
+            }
+
+            if (response === "accepted") {
+                const friendshipId = getFriendshipId(
+                    invitation.senderId,
+                    currentUser.uid
+                );
+                const friendshipRef = doc(db, "friendships", friendshipId);
+                const friendshipSnapshot = await transaction.get(friendshipRef);
+
+                if (friendshipSnapshot.exists()) {
+                    throw new Error("You are already friends with this person.");
+                }
+
+                const userIds = [
+                    invitation.senderId,
+                    currentUser.uid
+                ].sort();
+
+                transaction.update(invitationRef, {
+                    status: "accepted",
+                    usedBy: currentUser.uid,
+                    usedAt: serverTimestamp()
+                });
+
+                transaction.set(friendshipRef, {
+                    userIds,
+                    invitationId,
+                    createdAt: serverTimestamp()
+                });
+            } else {
+                transaction.update(invitationRef, {
+                    status: "declined",
+                    usedBy: currentUser.uid,
+                    usedAt: serverTimestamp()
+                });
+            }
+        });
+
+        clearInvitationFromUrl();
+        incomingInvitation.classList.add("hidden");
+
+        if (response === "accepted") {
+            setMessage(appMessage, "You're now friends.", "success");
+            await loadFriends();
+        } else {
+            setMessage(appMessage, "Invitation declined.", "success");
+        }
+    } catch (error) {
+        console.error("Invitation response error:", error);
+        
+        const message = getFirebaseErrorMessage(error);
+        await loadIncomingInvitation();
+        setMessage(appMessage, message, "error");
+    } finally {
+        invitationActionInProgress = false;
+        acceptInvitationButton.disabled = false;
+        declineInvitationButton.disabled = false;
+    }
+}
+
+acceptInvitationButton.addEventListener("click", () => {
+    respondToInvitation("accepted");
+});
+
+declineInvitationButton.addEventListener("click", () => {
+    respondToInvitation("declined");
+});
+
 onAuthStateChanged(auth, async (user) => {
     authResolved = true;
+    currentUser = user;
+    currentProfile = null;
 
     if (!user) {
         authSection.classList.remove("hidden");
@@ -292,7 +602,7 @@ onAuthStateChanged(auth, async (user) => {
 
     try {
         const userRef = doc(db, "users", user.uid);
-        const profileSnapshot = await getDoc(userRef);
+        let profileSnapshot = await getDoc(userRef);
 
         if (!profileSnapshot.exists()) {
             const displayName = user.displayName?.trim();
@@ -302,20 +612,28 @@ onAuthStateChanged(auth, async (user) => {
             }
 
             await createUserProfile(user, displayName);
+            profileSnapshot = await getDoc(userRef);
         }
 
-        const profile = (await getDoc(userRef)).data();
+        currentProfile = profileSnapshot.data();
 
-        welcomeHeading.textContent = `Welcome, ${profile.displayName}`;
-        profileEmail.textContent = profile.email || user.email || "";
+        welcomeHeading.textContent =
+            `Welcome, ${currentProfile.displayName}`;
+        profileEmail.textContent = currentProfile.email || user.email || "";
 
-        setMessage(appMessage, "");
+        await Promise.all([
+            loadFriends(),
+            loadIncomingInvitation()
+        ]);
+
+        if (!getInvitationIdFromUrl()) {
+            setMessage(appMessage, "");
+        }
     } catch (error) {
-        console.error("Profile loading error:", error);
-
+        console.error("Account loading error:", error);
         setMessage(
             appMessage,
-            "We couldn't load your profile. Check your connection and Firestore security rules, then reload the page.",
+            "We couldn't load your account. Check your connection and Firestore security rules, then reload.",
             "error"
         );
     }
