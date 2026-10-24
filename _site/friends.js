@@ -1,7 +1,7 @@
 import { auth, db } from "./firebase.js";
 import { onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/11.2.0/firebase-auth.js";
 import {
-    collection, doc, getDoc, getDocs, query, where, setDoc,
+    collection, doc, getDoc, getDocs, query, where, setDoc, deleteDoc,
     runTransaction, serverTimestamp
 } from "https://www.gstatic.com/firebasejs/11.2.0/firebase-firestore.js";
 
@@ -71,7 +71,55 @@ async function loadFriends() {
         for (const profile of profiles) {
             const item = document.createElement("li");
             item.className = "friend-item";
-            item.textContent = profile.displayName || "Friend";
+
+            const name = document.createElement("span");
+            name.className = "friend-name";
+            name.textContent = profile.displayName || "Friend";
+
+            const removeButton = document.createElement("button");
+            removeButton.className = "button button-secondary remove-friend-button";
+            removeButton.type = "button";
+            removeButton.textContent = "Remove";
+            removeButton.setAttribute(
+                "aria-label",
+                `Remove ${profile.displayName || "friend"}`
+            );
+
+            removeButton.addEventListener("click", async () => {
+                const confirmed = window.confirm(
+                    `Remove ${profile.displayName || "this friend"} from your friends? ` +
+                    "They will no longer be able to see your posts, and you will no longer see theirs."
+                );
+
+                if (!confirmed) {
+                    return;
+                }
+
+                removeButton.disabled = true;
+                setMessage(`Removing ${profile.displayName || "friend"}...`);
+
+                try {
+                    const friendshipId = getFriendshipId(
+                        currentUser.uid,
+                        profile.uid
+                    );
+
+                    await deleteDoc(doc(db, "friendships", friendshipId));
+
+                    setMessage(
+                        `${profile.displayName || "Friend"} was removed.`,
+                        "success"
+                    );
+
+                    await loadFriends();
+                } catch (error) {
+                    console.error("Friend removal error:", error);
+                    setMessage(getFirebaseErrorMessage(error), "error");
+                    removeButton.disabled = false;
+                }
+            });
+
+            item.append(name, removeButton);
             friendsList.append(item);
         }
         friendsEmpty.textContent = "";

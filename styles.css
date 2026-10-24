@@ -392,6 +392,8 @@ a:focus-visible {
 .friend-item {
     display: flex;
     align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
     min-height: 3.25rem;
     padding: 0.75rem 1rem;
     color: #343a36;
@@ -399,7 +401,23 @@ a:focus-visible {
     border: 1px solid #dedfd9;
     border-radius: 0.65rem;
     font-size: 0.95rem;
+}
+
+.friend-name {
+    min-width: 0;
     overflow-wrap: anywhere;
+}
+
+.remove-friend-button {
+    flex-shrink: 0;
+    min-height: 36px;
+    padding: 0.4rem 0.75rem;
+    font-size: 0.85rem;
+}
+
+.remove-friend-button:disabled {
+    cursor: not-allowed;
+    opacity: 0.6;
 }
 
 #invitation-link-area {
