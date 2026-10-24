@@ -1,0 +1,149 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="A calmer way to stay connected with the people who matter.">
+    <meta name="theme-color" content="#f5f3ef">
+    <title> Near </title>
+    <link rel="stylesheet" href="styles.css">
+    <script type="module" src="app.js"></script>
+</head>
+<body>
+    <main class="page-container">
+        <header class="site-header">
+            <a class="brand" href="./" aria-label="Near home"> Near </a>
+            <p class="brand-subtitle"> Stay connected, intentionally. </p>
+        </header>
+
+        <section id="auth-section" class="card auth-card" aria-labelledby="auth-heading">
+            <div class="card-heading">
+                <p class="eyebrow"> A more intentional social space </p>
+                <h1 id="auth-heading"> Stay close to your people. </h1>
+                <p class="intro-text">
+                    Share life with friends without the endless scroll.
+                </p>
+            </div>
+
+            <div class="auth-tabs" role="group" aria-label="Authentication options">
+                <button
+                    id="login-tab"
+                    class="tab-button active"
+                    type="button"
+                    aria-pressed="true"
+                >
+                    Log in
+                </button>
+                <button
+                    id="signup-tab"
+                    class="tab-button"
+                    type="button"
+                    aria-pressed="false"
+                >
+                    Create account
+                </button>
+            </div>
+
+            <form id="auth-form">
+                <div id="display-name-group" class="form-group hidden">
+                    <label for="display-name"> Display name </label>
+                    <input
+                        id="display-name"
+                        name="displayName"
+                        type="text"
+                        autocomplete="name"
+                        maxlength="60"
+                        placeholder="What should your friends call you?"
+                    >
+                    <p class="field-hint"> Make it recognizable so your friends know it's you. </p>
+                </div>
+
+                <div class="form-group">
+                    <label for="email"> Email address </label>
+                    <input
+                        id="email"
+                        name="email"
+                        type="email"
+                        autocomplete="email"
+                        maxlength="254"
+                        placeholder="you@example.com"
+                        required
+                    >
+                </div>
+
+                <div class="form-group">
+                    <label for="password"> Password </label>
+                    <input
+                        id="password"
+                        name="password"
+                        type="password"
+                        autocomplete="current-password"
+                        minlength="6"
+                        placeholder="At least 6 characters"
+                        required
+                    >
+                    <p class="field-hint"> Use at least 6 characters. </p>
+                </div>
+
+                <button id="submit-button" class="button button-primary" type="submit">
+                    Log in
+                </button>
+
+                <button id="forgot-password" class="text-button" type="button">
+                    Forgot your password?
+                </button>
+
+                <p
+                    id="auth-message"
+                    class="message"
+                    role="status"
+                    aria-live="polite"
+                ></p>
+            </form>
+
+            <p class="privacy-note">
+                Your space, your friends, your time. No endless feed.
+            </p>
+        </section>
+
+        <section
+            id="app-section"
+            class="card dashboard-card hidden"
+            aria-labelledby="welcome-heading"
+        >
+            <div class="dashboard-header">
+                <div>
+                    <p class="eyebrow"> Your space </p>
+                    <h1 id="welcome-heading"> Welcome </h1>
+                </div>
+                <button id="logout-button" class="button button-secondary" type="button">
+                    Log out
+                </button>
+            </div>
+
+            <p id="profile-email" class="profile-email"></p>
+
+            <div class="empty-state">
+                <div class="empty-state-mark" aria-hidden="true"> + </div>
+                <h2> Your social space starts here. </h2>
+                <p>
+                    We're building a simpler way to stay connected with friends.
+                    Friendships and posts will be available in a future version.
+                </p>
+            </div>
+
+            <p
+                id="app-message"
+                class="message"
+                role="status"
+                aria-live="polite"
+            ></p>
+        </section>
+
+        <footer class="site-footer">
+            <p> Built for connection, not endless scrolling. </p>
+        </footer>
+    </main>
+</body>
+</html>
