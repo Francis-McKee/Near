@@ -1,0 +1,88 @@
+/* Shared navigation and page-specific additions. Loaded after styles.css. */
+.app-nav {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 0.4rem;
+    margin: 0 0 1.75rem;
+    padding: 0.35rem;
+    background: #eeece6;
+    border: 1px solid #dedfd9;
+    border-radius: 0.85rem;
+}
+
+.app-nav-link {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    min-width: 0;
+    padding: 0.7rem 0.5rem;
+    color: #555d57;
+    border-radius: 0.6rem;
+    text-decoration: none;
+    font-size: 0.95rem;
+    font-weight: 500;
+    transition: background-color 150ms ease, color 150ms ease;
+}
+
+.app-nav-link:hover {
+    color: #283b30;
+    background: #e4e2db;
+}
+
+.app-nav-link[aria-current="page"] {
+    color: #fff;
+    background: #42634f;
+}
+
+.nav-symbol {
+    font-size: 1.15rem;
+    line-height: 1;
+}
+
+.feed-placeholder {
+    margin-top: 1.5rem;
+    padding: 1.5rem;
+    background: #f5f3ef;
+    border: 1px solid #dedfd9;
+    border-radius: 0.8rem;
+}
+
+.feed-placeholder h2 {
+    margin: 0 0 0.5rem;
+    color: #343a36;
+    font-size: 1.15rem;
+    font-weight: 600;
+}
+
+.feed-placeholder p {
+    margin: 0;
+    color: #656d67;
+    line-height: 1.6;
+}
+
+.profile-detail {
+    margin-top: 1rem;
+}
+
+.profile-detail-label {
+    display: block;
+    margin-bottom: 0.3rem;
+    color: #656d67;
+    font-size: 0.875rem;
+}
+
+.profile-detail-value {
+    margin: 0;
+    color: #343a36;
+    overflow-wrap: anywhere;
+}
+
+@media (max-width: 420px) {
+    .app-nav-link {
+        flex-direction: column;
+        gap: 0.25rem;
+        padding: 0.65rem 0.25rem;
+        font-size: 0.8rem;
+    }
+}

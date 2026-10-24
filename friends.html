@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Manage your Near friends and invitations.">
+    <meta name="theme-color" content="#f5f3ef">
+    <title>Near — Friends</title>
+    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="navigation.css">
+    <script type="module" src="friends.js"></script>
+</head>
+<body>
+    <main class="page-container">
+        <header class="site-header">
+            <a class="brand" href="index.html" aria-label="Near home">Near</a>
+            <p class="brand-subtitle">Stay connected, intentionally.</p>
+        </header>
+        <section id="friends-page" class="card dashboard-card hidden" aria-labelledby="friends-page-heading">
+            <nav class="app-nav" aria-label="Main navigation" data-page="friends">
+                <a class="app-nav-link" href="index.html" data-nav="feed"><span class="nav-symbol" aria-hidden="true">⌂</span><span>Feed</span></a>
+                <a class="app-nav-link" href="friends.html" data-nav="friends" aria-current="page"><span class="nav-symbol" aria-hidden="true">☺</span><span>Friends</span></a>
+                <a class="app-nav-link" href="profile.html" data-nav="profile"><span class="nav-symbol" aria-hidden="true">⚙</span><span>Profile</span></a>
+            </nav>
+            <div class="dashboard-header">
+                <div><p class="eyebrow">Your network</p><h1 id="friends-page-heading">Friends</h1></div>
+            </div>
+            <section class="friend-section" aria-labelledby="friends-heading">
+                <h2 id="friends-heading">Your friends</h2>
+                <p id="friends-empty" class="intro-text">Your accepted connections will appear here.</p>
+                <ul id="friends-list" class="friends-list"></ul>
+            </section>
+            <section class="friend-section" aria-labelledby="invite-heading">
+                <h2 id="invite-heading">Invite a friend</h2>
+                <p class="intro-text">Send someone a personal invitation. You'll become friends only if they accept.</p>
+                <button id="create-invitation-button" class="button button-primary" type="button">Create invitation link</button>
+                <div id="invitation-link-area" class="form-group hidden">
+                    <label for="invitation-link">Your invitation link</label>
+                    <input id="invitation-link" type="url" readonly aria-describedby="invitation-link-hint">
+                    <p id="invitation-link-hint" class="field-hint">Send this link directly to your friend. It can be used once.</p>
+                    <button id="copy-invitation-button" class="button button-secondary" type="button">Copy link</button>
+                </div>
+            </section>
+            <section id="incoming-invitation" class="friend-section hidden" aria-labelledby="incoming-heading">
+                <h2 id="incoming-heading">Friend invitation</h2>
+                <p id="incoming-invitation-text" class="intro-text"></p>
+                <div class="invitation-actions">
+                    <button id="accept-invitation-button" class="button button-primary" type="button">Accept</button>
+                    <button id="decline-invitation-button" class="button button-secondary" type="button">Decline</button>
+                </div>
+            </section>
+            <p id="app-message" class="message" role="status" aria-live="polite"></p>
+        </section>
+        <footer class="site-footer"><p>Built for connection, not endless scrolling.</p></footer>
+    </main>
+</body>
+</html>

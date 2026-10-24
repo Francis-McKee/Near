@@ -5,8 +5,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="description" content="A calmer way to stay connected with the people who matter.">
     <meta name="theme-color" content="#f5f3ef">
-    <title>Near</title>
+    <title>Near — Feed</title>
     <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="navigation.css">
     <script type="module" src="app.js"></script>
 </head>
 <body>
@@ -20,167 +21,57 @@
             <div class="card-heading">
                 <p class="eyebrow">A more intentional social space</p>
                 <h1 id="auth-heading">Stay close to your people.</h1>
-                <p class="intro-text">
-                    Share life with friends without the endless scroll.
-                </p>
+                <p class="intro-text">Share life with friends without the endless scroll.</p>
             </div>
 
             <div class="auth-tabs" role="group" aria-label="Authentication options">
-                <button id="login-tab" class="tab-button active" type="button" aria-pressed="true">
-                    Log in
-                </button>
-                <button id="signup-tab" class="tab-button" type="button" aria-pressed="false">
-                    Create account
-                </button>
+                <button id="login-tab" class="tab-button active" type="button" aria-pressed="true">Log in</button>
+                <button id="signup-tab" class="tab-button" type="button" aria-pressed="false">Create account</button>
             </div>
 
             <form id="auth-form">
                 <div id="display-name-group" class="form-group hidden">
                     <label for="display-name">Display name</label>
-                    <input
-                        id="display-name"
-                        name="displayName"
-                        type="text"
-                        autocomplete="name"
-                        maxlength="60"
-                        placeholder="What should your friends call you?"
-                    >
-                    <p class="field-hint">
-                        Make it recognizable so your friends know it's you.
-                    </p>
+                    <input id="display-name" name="displayName" type="text" autocomplete="name" maxlength="60" placeholder="What should your friends call you?">
+                    <p class="field-hint">Make it recognizable so your friends know it's you.</p>
                 </div>
-
                 <div class="form-group">
                     <label for="email">Email address</label>
-                    <input
-                        id="email"
-                        name="email"
-                        type="email"
-                        autocomplete="email"
-                        maxlength="254"
-                        placeholder="you@example.com"
-                        required
-                    >
+                    <input id="email" name="email" type="email" autocomplete="email" maxlength="254" placeholder="you@example.com" required>
                 </div>
-
                 <div class="form-group">
                     <label for="password">Password</label>
-                    <input
-                        id="password"
-                        name="password"
-                        type="password"
-                        autocomplete="current-password"
-                        minlength="6"
-                        placeholder="At least 6 characters"
-                        required
-                    >
+                    <input id="password" name="password" type="password" autocomplete="current-password" minlength="6" placeholder="At least 6 characters" required>
                     <p class="field-hint">Use at least 6 characters.</p>
                 </div>
-
-                <button id="submit-button" class="button button-primary" type="submit">
-                    Log in
-                </button>
-
-                <button id="forgot-password" class="text-button" type="button">
-                    Forgot your password?
-                </button>
-
+                <button id="submit-button" class="button button-primary" type="submit">Log in</button>
+                <button id="forgot-password" class="text-button" type="button">Forgot your password?</button>
                 <p id="auth-message" class="message" role="status" aria-live="polite"></p>
             </form>
-
-            <p class="privacy-note">
-                Your space, your friends, your time. No endless feed.
-            </p>
+            <p class="privacy-note">Your space, your friends, your time. No endless feed.</p>
         </section>
 
-        <section
-            id="app-section"
-            class="card dashboard-card hidden"
-            aria-labelledby="welcome-heading"
-        >
+        <section id="app-section" class="card dashboard-card hidden" aria-labelledby="feed-heading">
+            <nav class="app-nav" aria-label="Main navigation" data-page="feed">
+                <a class="app-nav-link" href="index.html" data-nav="feed" aria-current="page"><span class="nav-symbol" aria-hidden="true">⌂</span><span>Feed</span></a>
+                <a class="app-nav-link" href="friends.html" data-nav="friends"><span class="nav-symbol" aria-hidden="true">☺</span><span>Friends</span></a>
+                <a class="app-nav-link" href="profile.html" data-nav="profile"><span class="nav-symbol" aria-hidden="true">⚙</span><span>Profile</span></a>
+            </nav>
             <div class="dashboard-header">
                 <div>
                     <p class="eyebrow">Your space</p>
-                    <h1 id="welcome-heading">Welcome</h1>
+                    <h1 id="feed-heading">Your feed</h1>
                 </div>
-                <button id="logout-button" class="button button-secondary" type="button">
-                    Log out
-                </button>
             </div>
-
-            <p id="profile-email" class="profile-email"></p>
-
-            <section class="friend-section" aria-labelledby="friends-heading">
-                <h2 id="friends-heading">Your friends</h2>
-                <p id="friends-empty" class="intro-text">
-                    Your accepted connections will appear here.
-                </p>
-                <ul id="friends-list" class="friends-list"></ul>
+            <p id="feed-welcome" class="intro-text"></p>
+            <section class="feed-placeholder" aria-labelledby="feed-placeholder-heading">
+                <h2 id="feed-placeholder-heading">A little room for real life.</h2>
+                <p>Posts will live here. Once you share updates, you'll see your posts and your accepted friends' posts in chronological order.</p>
             </section>
-
-            <section class="friend-section" aria-labelledby="invite-heading">
-                <h2 id="invite-heading">Invite a friend</h2>
-                <p class="intro-text">
-                    Send someone a personal invitation. You'll become friends only
-                    if they accept.
-                </p>
-
-                <button
-                    id="create-invitation-button"
-                    class="button button-primary"
-                    type="button"
-                >
-                    Create invitation link
-                </button>
-
-                <div id="invitation-link-area" class="form-group hidden">
-                    <label for="invitation-link">Your invitation link</label>
-                    <input
-                        id="invitation-link"
-                        type="url"
-                        readonly
-                        aria-describedby="invitation-link-hint"
-                    >
-                    <p id="invitation-link-hint" class="field-hint">
-                        Send this link directly to your friend. It can be used once.
-                    </p>
-                    <button
-                        id="copy-invitation-button"
-                        class="button button-secondary"
-                        type="button"
-                    >
-                        Copy link
-                    </button>
-                </div>
-            </section>
-
-            <section id="incoming-invitation" class="friend-section hidden" aria-labelledby="incoming-heading">
-                <h2 id="incoming-heading">Friend invitation</h2>
-                <p id="incoming-invitation-text" class="intro-text"></p>
-                <div class="invitation-actions">
-                    <button
-                        id="accept-invitation-button"
-                        class="button button-primary"
-                        type="button"
-                    >
-                        Accept
-                    </button>
-                    <button
-                        id="decline-invitation-button"
-                        class="button button-secondary"
-                        type="button"
-                    >
-                        Decline
-                    </button>
-                </div>
-            </section>
-
             <p id="app-message" class="message" role="status" aria-live="polite"></p>
         </section>
 
-        <footer class="site-footer">
-            <p>Built for connection, not endless scrolling.</p>
-        </footer>
+        <footer class="site-footer"><p>Built for connection, not endless scrolling.</p></footer>
     </main>
 </body>
 </html>
