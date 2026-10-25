@@ -208,48 +208,154 @@ copyInvitationButton.addEventListener("click", async () => {
     }
 });
 
+
 async function respondToInvitation(response) {
     if (!currentUser || invitationActionInProgress) return;
+
     const invitationId = getInvitationIdFromUrl();
+
     if (!invitationId) {
         setMessage("This invitation link is missing its code.", "error");
         return;
     }
+
     invitationActionInProgress = true;
     acceptInvitationButton.disabled = true;
     declineInvitationButton.disabled = true;
     setMessage("Processing invitation...");
+
     try {
         const invitationRef = doc(db, "friendInvitations", invitationId);
-        await runTransaction(db, async (transaction) => {
-            const invitationSnapshot = await transaction.get(invitationRef);
-            if (!invitationSnapshot.exists()) throw new Error("This invitation doesn't exist.");
-            const invitation = invitationSnapshot.data();
-            if (invitation.status !== "pending") throw new Error("This invitation has already been used.");
-            if (invitation.senderId === currentUser.uid) throw new Error("You cannot accept your own invitation.");
-            if (response === "accepted") {
-                const friendshipId = getFriendshipId(invitation.senderId, currentUser.uid);
-                const friendshipRef = doc(db, "friendships", friendshipId);
-                const friendshipSnapshot = await transaction.get(friendshipRef);
-                if (friendshipSnapshot.exists()) throw new Error("You are already friends with this person.");
-                transaction.update(invitationRef, { status: "accepted", usedBy: currentUser.uid, usedAt: serverTimestamp() });
-                transaction.set(friendshipRef, {
-                    userIds: [invitation.senderId, currentUser.uid].sort(),
-                    invitationId,
-                    createdAt: serverTimestamp()
+
+        let invitationSnapshot = await getDoc(invitationRef);
+
+        if (!invitationSnapshot.exists()) {
+            throw new Error("This invitation doesn't exist.");
+        }
+
+        let invitation = invitationSnapshot.data();
+
+        if (invitation.senderId === currentUser.uid) {
+            throw new Error("You cannot respond to your own invitation.");
+        }
+
+        if (invitation.status !== "pending") {
+            throw new Error("This invitation has already been used.");
+        }
+
+        if (invitation.usedBy && invitation.usedBy !== currentUser.uid) {
+            throw new Error("This invitation has already been claimed by another account.");
+        }
+
+        if (!invitation.usedBy) {
+            await runTransaction(db, async (transaction) => {
+                const snapshot = await transaction.get(invitationRef);
+
+                if (!snapshot.exists()) {
+                    throw new Error("This invitation doesn't exist.");
+                }
+
+                const latest = snapshot.data();
+
+                if (
+                    latest.status !== "pending" ||
+                    latest.senderId === currentUser.uid ||
+                    latest.usedBy
+                ) {
+                    throw new Error("This invitation is no longer available.");
+                }
+
+                transaction.update(invitationRef, {
+                    usedBy: currentUser.uid,
+                    usedAt: serverTimestamp()
                 });
-            } else {
-                transaction.update(invitationRef, { status: "declined", usedBy: currentUser.uid, usedAt: serverTimestamp() });
+            });
+        }
+
+        if (response === "declined") {
+            await runTransaction(db, async (transaction) => {
+                const snapshot = await transaction.get(invitationRef);
+
+                if (!snapshot.exists()) {
+                    throw new Error("This invitation doesn't exist.");
+                }
+
+                const latest = snapshot.data();
+
+                if (
+                    latest.status !== "pending" ||
+                    latest.usedBy !== currentUser.uid
+                ) {
+                    throw new Error("This invitation is no longer available.");
+                }
+
+                transaction.update(invitationRef, {
+                    status: "declined"
+                });
+            });
+
+            clearInvitationFromUrl();
+            incomingInvitation.classList.add("hidden");
+            setMessage("Invitation declined.", "success");
+            return;
+        }
+
+        await runTransaction(db, async (transaction) => {
+            const snapshot = await transaction.get(invitationRef);
+
+            if (!snapshot.exists()) {
+                throw new Error("This invitation doesn't exist.");
             }
+
+            const latest = snapshot.data();
+
+            if (
+                latest.status !== "pending" ||
+                latest.usedBy !== currentUser.uid
+            ) {
+                throw new Error("This invitation is no longer available.");
+            }
+
+            transaction.update(invitationRef, {
+                status: "accepted"
+            });
         });
+
+        invitationSnapshot = await getDoc(invitationRef);
+
+        if (!invitationSnapshot.exists()) {
+            throw new Error("The accepted invitation could not be verified.");
+        }
+
+        invitation = invitationSnapshot.data();
+
+        if (
+            invitation.status !== "accepted" ||
+            invitation.usedBy !== currentUser.uid
+        ) {
+            throw new Error("The invitation could not be verified as accepted.");
+        }
+
+        const friendshipId = getFriendshipId(
+            invitation.senderId,
+            currentUser.uid
+        );
+
+        const friendshipRef = doc(db, "friendships", friendshipId);
+
+        await setDoc(friendshipRef, {
+            userIds: [
+                invitation.senderId,
+                currentUser.uid
+            ].sort(),
+            invitationId,
+            createdAt: serverTimestamp()
+        });
+
         clearInvitationFromUrl();
         incomingInvitation.classList.add("hidden");
-        if (response === "accepted") {
-            setMessage("You're now friends.", "success");
-            await loadFriends();
-        } else {
-            setMessage("Invitation declined.", "success");
-        }
+        setMessage("You're now friends.", "success");
+        await loadFriends();
     } catch (error) {
         console.error("Invitation response error:", error);
         await loadIncomingInvitation();
