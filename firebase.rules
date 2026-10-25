@@ -1,0 +1,177 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    function friendshipIdFor(uidA, uidB) {
+      return uidA < uidB
+        ? uidA + '_' + uidB
+        : uidB + '_' + uidA;
+    }
+
+    function areFriends(uidA, uidB) {
+      return uidA != uidB
+        && exists(
+          /databases/$(database)/documents/friendships/$(friendshipIdFor(uidA, uidB))
+        )
+        && get(
+          /databases/$(database)/documents/friendships/$(friendshipIdFor(uidA, uidB))
+        ).data.userIds.hasAll([uidA, uidB])
+        && get(
+          /databases/$(database)/documents/friendships/$(friendshipIdFor(uidA, uidB))
+        ).data.userIds.size() == 2;
+    }
+
+    // User profiles
+    match /users/{userId} {
+      allow create: if isOwner(userId)
+        && request.resource.data.uid == userId;
+
+      allow read: if isOwner(userId)
+        || (isSignedIn() && areFriends(request.auth.uid, userId));
+
+      allow update: if isOwner(userId)
+        && request.resource.data.uid == resource.data.uid
+        && request.resource.data.email == resource.data.email
+        && request.resource.data.createdAt == resource.data.createdAt;
+
+      allow delete: if isOwner(userId);
+    }
+
+    // Friend invitations
+    match /friendInvitations/{invitationId} {
+      allow create: if isSignedIn()
+        && request.resource.data.senderId == request.auth.uid
+        && request.resource.data.status == 'pending'
+        && request.resource.data.senderName is string
+        && request.resource.data.createdAt == request.time
+        && request.resource.data.keys().hasOnly([
+          'senderId',
+          'senderName',
+          'status',
+          'createdAt'
+        ]);
+
+      // Only the sender or the account that has claimed the invitation
+      // can read it, in addition to pending invitations.
+      allow read: if isSignedIn()
+        && (
+          resource.data.senderId == request.auth.uid
+          || resource.data.usedBy == request.auth.uid
+          || resource.data.status == 'pending'
+        );
+
+      // Claim and accept/decline an invitation.
+      allow update: if isSignedIn()
+        && resource.data.senderId != request.auth.uid
+        && resource.data.status == 'pending'
+        && (
+          // Claim an unused invitation.
+          (
+            !('usedBy' in resource.data)
+            && request.resource.data.usedBy == request.auth.uid
+            && request.resource.data.usedAt == request.time
+            && request.resource.data.status == 'pending'
+            && request.resource.data.diff(resource.data)
+              .affectedKeys().hasOnly(['usedBy', 'usedAt'])
+          )
+          ||
+          // Respond to an invitation already claimed by this account.
+          (
+            resource.data.usedBy == request.auth.uid
+            && request.resource.data.usedBy == resource.data.usedBy
+            && request.resource.data.usedAt == resource.data.usedAt
+            && request.resource.data.status in ['accepted', 'declined']
+            && request.resource.data.diff(resource.data)
+              .affectedKeys().hasOnly(['status'])
+          )
+        );
+
+      allow delete: if isSignedIn()
+        && (
+          resource.data.senderId == request.auth.uid
+          || resource.data.usedBy == request.auth.uid
+        );
+    }
+
+    // Friendships
+    match /friendships/{friendshipId} {
+      allow read: if isSignedIn()
+        && request.auth.uid in resource.data.userIds;
+
+      allow create: if isSignedIn()
+        && request.resource.data.userIds is list
+        && request.resource.data.userIds.size() == 2
+        && request.auth.uid in request.resource.data.userIds
+        && request.resource.data.userIds[0]
+          < request.resource.data.userIds[1]
+        && friendshipId == friendshipIdFor(
+          request.resource.data.userIds[0],
+          request.resource.data.userIds[1]
+        )
+        && request.resource.data.invitationId is string
+        && request.resource.data.createdAt == request.time
+        && exists(
+          /databases/$(database)/documents/friendInvitations/$(request.resource.data.invitationId)
+        )
+        && get(
+          /databases/$(database)/documents/friendInvitations/$(request.resource.data.invitationId)
+        ).data.senderId in request.resource.data.userIds
+        && get(
+          /databases/$(database)/documents/friendInvitations/$(request.resource.data.invitationId)
+        ).data.usedBy in request.resource.data.userIds
+        && get(
+          /databases/$(database)/documents/friendInvitations/$(request.resource.data.invitationId)
+        ).data.status == 'accepted';
+
+      allow update: if false;
+
+      // Either participant can end the friendship.
+      allow delete: if isSignedIn()
+        && request.auth.uid in resource.data.userIds;
+    }
+
+    // Text posts
+    match /posts/{postId} {
+      allow create: if isSignedIn()
+        && request.resource.data.authorId == request.auth.uid
+        && request.resource.data.text is string
+        && request.resource.data.text.size() > 0
+        && request.resource.data.text.size() <= 2000
+        && request.resource.data.createdAt == request.time
+        && request.resource.data.keys().hasOnly([
+          'authorId',
+          'authorName',
+          'text',
+          'createdAt'
+        ])
+        && request.resource.data.authorName is string;
+
+      // Authors can read their own posts. Other users need an active,
+      // direct friendship with the author.
+      allow read: if isSignedIn()
+        && (
+          resource.data.authorId == request.auth.uid
+          || areFriends(request.auth.uid, resource.data.authorId)
+        );
+
+      allow update: if false;
+
+      allow delete: if isSignedIn()
+        && resource.data.authorId == request.auth.uid;
+    }
+
+    // Deny access to all other collections and documents.
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}
