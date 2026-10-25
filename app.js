@@ -12,6 +12,7 @@ import {
     doc,
     getDoc,
     getDocs,
+    setDoc,
     query,
     serverTimestamp,
     where
