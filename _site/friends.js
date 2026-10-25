@@ -72,9 +72,14 @@ async function loadFriends() {
             const item = document.createElement("li");
             item.className = "friend-item";
 
-            const name = document.createElement("span");
+            const name = document.createElement("a");
             name.className = "friend-name";
+            name.href = `view-profile.html?uid=${encodeURIComponent(profile.uid)}`;
             name.textContent = profile.displayName || "Friend";
+            name.setAttribute(
+                "aria-label",
+                `View ${profile.displayName || "friend"}'s profile`
+            );
 
             const removeButton = document.createElement("button");
             removeButton.className = "button button-secondary remove-friend-button";

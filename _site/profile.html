@@ -1,13 +1,15 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="description" content="Your Near account and settings.">
+    <meta name="description" content="Your Near profile and posts.">
     <meta name="theme-color" content="#f5f3ef">
-    <title>Near — Profile & Settings</title>
+    <title>Near — Profile</title>
     <link rel="stylesheet" href="styles.css">
     <link rel="stylesheet" href="navigation.css">
+    <script type="module" src="navigation.js"></script>
     <script type="module" src="profile.js"></script>
 </head>
 <body>
@@ -16,33 +18,42 @@
             <a class="brand" href="index.html" aria-label="Near home">Near</a>
             <p class="brand-subtitle">Stay connected, intentionally.</p>
         </header>
+
         <section id="profile-page" class="card dashboard-card hidden" aria-labelledby="profile-heading">
-            <nav class="app-nav" aria-label="Main navigation" data-page="profile">
-                <a class="app-nav-link" href="index.html" data-nav="feed"><span class="nav-symbol" aria-hidden="true">⌂</span><span>Feed</span></a>
-                <a class="app-nav-link" href="friends.html" data-nav="friends"><span class="nav-symbol" aria-hidden="true">☺</span><span>Friends</span></a>
-                <a class="app-nav-link" href="profile.html" data-nav="profile" aria-current="page"><span class="nav-symbol" aria-hidden="true">⚙</span><span>Profile</span></a>
-            </nav>
+            <div data-shared-navigation data-page="profile"></div>
+
             <div class="dashboard-header">
-                <div><p class="eyebrow">Your account</p><h1 id="profile-heading">Profile & Settings</h1></div>
+                <div>
+                    <p class="eyebrow">Your space</p>
+                    <h1 id="profile-heading">Your profile</h1>
+                </div>
             </div>
-            <section class="friend-section" aria-labelledby="account-details-heading">
-                <h2 id="account-details-heading">Account details</h2>
-                <div class="profile-detail"><span class="profile-detail-label">Display name</span><p id="profile-display-name" class="profile-detail-value">Loading...</p></div>
-                <div class="profile-detail"><span class="profile-detail-label">Email address</span><p id="profile-email" class="profile-detail-value">Loading...</p></div>
+
+            <section class="friend-section" aria-labelledby="profile-details-heading">
+                <h2 id="profile-details-heading">About you</h2>
+                <div class="profile-detail">
+                    <span class="profile-detail-label">Display name</span>
+                    <p id="profile-display-name" class="profile-detail-value">Loading...</p>
+                </div>
             </section>
-            <section class="friend-section" aria-labelledby="account-settings-heading">
-                <h2 id="account-settings-heading">Account settings</h2>
-                <p class="intro-text">You can request a password reset email for your account.</p>
-                <button id="reset-password-button" class="button button-secondary" type="button">Send password reset email</button>
+
+            <section class="friend-section" aria-labelledby="profile-posts-heading">
+                <h2 id="profile-posts-heading">Your posts</h2>
+                <p class="intro-text">Your posts will appear here.</p>
             </section>
-            <section class="friend-section" aria-labelledby="signout-heading">
-                <h2 id="signout-heading">Sign out</h2>
-                <p class="intro-text">Sign out of Near on this device.</p>
-                <button id="logout-button" class="button button-secondary" type="button">Log out</button>
+
+            <section class="friend-section" aria-labelledby="profile-settings-heading">
+                <h2 id="profile-settings-heading">Account settings</h2>
+                <p class="intro-text">Manage your account details, password, and sign-in.</p>
+                <a class="button button-secondary" href="settings.html">Open settings</a>
             </section>
+
             <p id="profile-message" class="message" role="status" aria-live="polite"></p>
         </section>
-        <footer class="site-footer"><p>Built for connection, not endless scrolling.</p></footer>
+
+        <footer class="site-footer">
+            <p>Built for connection, not endless scrolling.</p>
+        </footer>
     </main>
 </body>
 </html>

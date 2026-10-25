@@ -1,0 +1,70 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Manage your Near account settings.">
+    <meta name="theme-color" content="#f5f3ef">
+    <title>Near — Settings</title>
+    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="navigation.css">
+    <script type="module" src="navigation.js"></script>
+    <script type="module" src="settings.js"></script>
+</head>
+<body>
+    <main class="page-container">
+        <header class="site-header">
+            <a class="brand" href="index.html" aria-label="Near home">Near</a>
+            <p class="brand-subtitle">Stay connected, intentionally.</p>
+        </header>
+
+        <section id="settings-page" class="card dashboard-card hidden" aria-labelledby="settings-heading">
+            <div data-shared-navigation data-page="settings"></div>
+
+            <div class="dashboard-header">
+                <div>
+                    <p class="eyebrow">Your account</p>
+                    <h1 id="settings-heading">Settings</h1>
+                </div>
+            </div>
+
+            <p><a class="text-button" href="profile.html">← Back to your profile</a></p>
+
+            <section class="friend-section" aria-labelledby="account-details-heading">
+                <h2 id="account-details-heading">Account details</h2>
+                <div class="profile-detail">
+                    <span class="profile-detail-label">Display name</span>
+                    <p id="settings-display-name" class="profile-detail-value">Loading...</p>
+                </div>
+                <div class="profile-detail">
+                    <span class="profile-detail-label">Email address</span>
+                    <p id="settings-email" class="profile-detail-value">Loading...</p>
+                </div>
+            </section>
+
+            <section class="friend-section" aria-labelledby="account-settings-heading">
+                <h2 id="account-settings-heading">Password</h2>
+                <p class="intro-text">Request a password reset email to change your password.</p>
+                <button id="reset-password-button" class="button button-secondary" type="button">
+                    Send password reset email
+                </button>
+            </section>
+
+            <section class="friend-section" aria-labelledby="signout-heading">
+                <h2 id="signout-heading">Sign out</h2>
+                <p class="intro-text">Sign out of Near on this device.</p>
+                <button id="logout-button" class="button button-secondary" type="button">
+                    Log out
+                </button>
+            </section>
+
+            <p id="settings-message" class="message" role="status" aria-live="polite"></p>
+        </section>
+
+        <footer class="site-footer">
+            <p>Built for connection, not endless scrolling.</p>
+        </footer>
+    </main>
+</body>
+</html>

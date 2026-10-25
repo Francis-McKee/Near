@@ -207,14 +207,26 @@ function createPostElement(postId, post) {
 
     const author = document.createElement("h3");
     author.className = "feed-post-author";
-    author.textContent = post.authorName || "Near member";
+
+    const authorLink = document.createElement("a");
+    authorLink.textContent = post.authorName || "Near member";
+
+    if (post.authorId === currentUser.uid) {
+        authorLink.href = "profile.html";
+    } else {
+        authorLink.href = `view-profile.html?uid=${encodeURIComponent(post.authorId)}`;
+    }
+
+    author.append(authorLink);
 
     const date = document.createElement("time");
     date.className = "feed-post-date";
     date.textContent = formatPostDate(post.createdAt);
+
     if (post.createdAt && typeof post.createdAt.toDate === "function") {
         date.dateTime = post.createdAt.toDate().toISOString();
     }
+
     header.append(author, date);
     article.append(header);
 

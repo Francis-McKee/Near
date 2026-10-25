@@ -9,6 +9,7 @@
     <link rel="stylesheet" href="styles.css">
     <link rel="stylesheet" href="navigation.css">
     <script type="module" src="app.js"></script>
+    <script type="module" src="navigation.js"></script>
 </head>
 <body>
     <main class="page-container">
@@ -50,11 +51,7 @@
         </section>
 
         <section id="app-section" class="card dashboard-card hidden" aria-labelledby="feed-heading">
-            <nav class="app-nav" aria-label="Main navigation" data-page="feed">
-                <a class="app-nav-link" href="index.html" data-nav="feed" aria-current="page"><span class="nav-symbol" aria-hidden="true">⌂</span><span>Feed</span></a>
-                <a class="app-nav-link" href="friends.html" data-nav="friends"><span class="nav-symbol" aria-hidden="true">☺</span><span>Friends</span></a>
-                <a class="app-nav-link" href="profile.html" data-nav="profile"><span class="nav-symbol" aria-hidden="true">⚙</span><span>Profile</span></a>
-            </nav>
+            <div data-shared-navigation data-page="feed"></div>
 
             <div class="dashboard-header">
                 <div>
