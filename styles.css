@@ -431,6 +431,46 @@ a:focus-visible {
     opacity: 0.6;
 }
 
+
+.friend-remove-confirmation {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.friend-remove-confirmation span {
+    margin-right: 4px;
+}
+
+.friend-remove-confirm-button,
+.friend-remove-cancel-button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 36px;
+    height: 36px;
+    padding: 8px;
+    flex-shrink: 0;
+    border: 1px solid currentColor;
+    border-radius: 6px;
+    background: transparent;
+    color: inherit;
+    cursor: pointer;
+}
+
+.friend-remove-confirm-button svg,
+.friend-remove-cancel-button svg {
+    display: block;
+    width: 18px;
+    height: 18px;
+}
+
+.friend-remove-confirm-button:disabled,
+.friend-remove-cancel-button:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
 #invitation-link-area {
     display: grid;
     gap: 0.65rem;

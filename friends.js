@@ -90,41 +90,82 @@ async function loadFriends() {
                 `Remove ${profile.displayName || "friend"}`
             );
 
-            removeButton.addEventListener("click", async () => {
-                const confirmed = window.confirm(
-                    `Remove ${profile.displayName || "this friend"} from your friends? ` +
-                    "They will no longer be able to see your posts, and you will no longer see theirs."
+            removeButton.addEventListener("click", () => {
+                const confirmation = document.createElement("div");
+                confirmation.className = "friend-remove-confirmation";
+
+                const prompt = document.createElement("span");
+                prompt.textContent = "Remove friend?";
+
+                const confirmButton = document.createElement("button");
+                confirmButton.type = "button";
+                confirmButton.className = "friend-remove-confirm-button";
+                confirmButton.setAttribute(
+                    "aria-label",
+                    `Confirm removing ${profile.displayName || "friend"}`
                 );
+                confirmButton.innerHTML = `
+                    <svg viewBox="0 0 24 24" fill="none"
+                        stroke="currentColor" stroke-width="2"
+                        stroke-linecap="round" stroke-linejoin="round"
+                        aria-hidden="true">
+                        <path d="m5 12 4 4L19 6" />
+                    </svg>
+                `;
 
-                if (!confirmed) {
-                    return;
-                }
+                const cancelButton = document.createElement("button");
+                cancelButton.type = "button";
+                cancelButton.className = "friend-remove-cancel-button";
+                cancelButton.setAttribute(
+                    "aria-label",
+                    "Cancel removing friend"
+                );
+                cancelButton.innerHTML = `
+                    <svg viewBox="0 0 24 24" fill="none"
+                        stroke="currentColor" stroke-width="2"
+                        stroke-linecap="round" stroke-linejoin="round"
+                        aria-hidden="true">
+                        <path d="m18 6-12 12M6 6l12 12" />
+                    </svg>
+                `;
 
-                removeButton.disabled = true;
-                setMessage(`Removing ${profile.displayName || "friend"}...`);
+                confirmation.append(prompt, confirmButton, cancelButton);
+                removeButton.replaceWith(confirmation);
 
-                try {
-                    const friendshipId = getFriendshipId(
-                        currentUser.uid,
-                        profile.uid
-                    );
+                cancelButton.addEventListener("click", () => {
+                    confirmation.replaceWith(removeButton);
+                });
 
-                    await deleteDoc(doc(db, "friendships", friendshipId));
+                confirmButton.addEventListener("click", async () => {
+                    confirmButton.disabled = true;
+                    cancelButton.disabled = true;
+                    setMessage(`Removing ${profile.displayName || "friend"}...`);
 
-                    setMessage(
-                        `${profile.displayName || "Friend"} was removed.`,
-                        "success"
-                    );
+                    try {
+                        const friendshipId = getFriendshipId(
+                            currentUser.uid,
+                            profile.uid
+                        );
 
-                    await loadFriends();
-                } catch (error) {
-                    console.error("Friend removal error:", error);
-                    setMessage(getFirebaseErrorMessage(error), "error");
-                    removeButton.disabled = false;
-                }
+                        await deleteDoc(doc(db, "friendships", friendshipId));
+
+                        setMessage(
+                            `${profile.displayName || "Friend"} was removed.`,
+                            "success"
+                        );
+
+                        await loadFriends();
+                    } catch (error) {
+                        console.error("Friend removal error:", error);
+                        setMessage(getFirebaseErrorMessage(error), "error");
+                        confirmButton.disabled = false;
+                        cancelButton.disabled = false;
+                    }
+                });
             });
 
             item.append(name, removeButton);
+
             friendsList.append(item);
         }
         friendsEmpty.textContent = "";
