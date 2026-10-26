@@ -1,3 +1,4 @@
+
 import { auth, db } from "./firebase.js";
 import {
     deleteUser,
@@ -21,6 +22,7 @@ const page = document.querySelector("#settings-page");
 const displayNameElement = document.querySelector("#settings-display-name");
 const emailElement = document.querySelector("#settings-email");
 const resetPasswordButton = document.querySelector("#reset-password-button");
+const resetMessage = document.querySelector("#reset-message");
 const logoutButton = document.querySelector("#logout-button");
 const messageElement = document.querySelector("#settings-message");
 
@@ -67,7 +69,7 @@ function createAccountDeletionSection() {
 
     const deleteButton = document.createElement("button");
     deleteButton.id = "delete-account-button";
-    deleteButton.className = "button button-secondary";
+    deleteButton.className = "button button-danger";
     deleteButton.type = "button";
     deleteButton.textContent = "Delete account permanently";
 
@@ -231,13 +233,13 @@ function createAccountDeletionSection() {
         }
     });
 
-    // Place the deletion section immediately before sign-out.
+    // Place the deletion section after sign-out.
     const signOutSection = page.querySelector(
         'section[aria-labelledby="signout-heading"]'
     );
 
     if (signOutSection) {
-        page.insertBefore(section, signOutSection);
+        signOutSection.insertAdjacentElement("afterend", section);
     } else {
         page.append(section);
     }
@@ -250,22 +252,21 @@ resetPasswordButton.addEventListener("click", async () => {
     if (!currentUser?.email) return;
 
     resetPasswordButton.disabled = true;
-    setMessage("Sending password reset email...");
+    resetMessage.textContent = "";
+    resetMessage.classList.remove("error", "success");
 
     try {
         await sendPasswordResetEmail(auth, currentUser.email);
 
-        setMessage(
-            "If an account exists for that address, a password reset email will be sent.",
-            "success"
-        );
+        resetMessage.textContent =
+            "Password reset email requested. Check your inbox and spam folder.";
+        resetMessage.classList.add("success");
     } catch (error) {
         console.error("Password reset error:", error);
 
-        setMessage(
-            error.message || "We couldn't send the password reset email.",
-            "error"
-        );
+        resetMessage.textContent =
+            error.message || "We couldn't send the password reset email.";
+        resetMessage.classList.add("error");
     } finally {
         resetPasswordButton.disabled = false;
     }

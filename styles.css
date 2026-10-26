@@ -245,6 +245,17 @@ h2 {
     background: var(--color-background);
 }
 
+.button-danger {
+    background-color: #c0392b;
+    color: #ffffff;
+    border: 1px solid #c0392b;
+}
+
+.button-danger:hover {
+    background-color: #a93226;
+    border-color: #a93226;
+}
+
 .text-button {
     display: block;
     margin: 14px auto 0;
