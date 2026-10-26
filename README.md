@@ -1,5 +1,11 @@
-# social-media
-Non-addictive social media clone
+# Near
+A non-addictive social network designed to foster meaningful, real-life connections without the engagement mechanics that keep people scrolling.
+
+## Why Near?
+
+Social media should help us maintain meaningful relationships, not compete for our attention. Near is built around the idea that staying connected with people you know shouldn't require endless scrolling, popularity metrics, or pressure to check in every day.
+
+Near prioritizes intentional use, mutual relationships, and a feed that lets you catch up and move on with your day.
 
 ## Non-addictive Features
 
@@ -32,5 +38,18 @@ Non-addictive social media clone
 5. Privacy and user control
 - Mutual consent for friendships.
 - Restricted post visibility: Posts are available only to accepted friends.
-- Blocking and reporting: Users can protect themselves from unwanted interactions.
 - Account deletion: Users can leave the platform and request deletion of their data.
+
+## Planned Features
+
+Near is under active development. Core functionality includes authentication, profiles, text posts, a chronological friends-only feed, and mutual friendships through invitation links.
+
+Planned improvements include:
+- Purchase and configure a custom domain.
+- Allow users to include images in posts.
+
+## Support Near
+
+Near will remain free to use. If Near has helped you foster community while spending less time on social media, consider supporting its development [here](https://buymeacoffee.com/francismckee).
+
+For any feedback, contact us [here](https://francismckee.com/contact.html). We look forward to hearing from you!
