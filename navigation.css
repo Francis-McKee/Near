@@ -36,8 +36,10 @@
 }
 
 .nav-symbol {
-    font-size: 1.15rem;
-    line-height: 1;
+    display: block;
+    width: 20px;
+    height: 20px;
+    flex-shrink: 0;
 }
 
 .feed-placeholder {
